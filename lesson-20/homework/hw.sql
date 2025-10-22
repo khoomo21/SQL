@@ -1,4 +1,3 @@
-
 SET NOCOUNT ON;
 
 --------------------------------------------------------------------------------
@@ -140,3 +139,40 @@ GO
         RouteID,
         DepartureCity,
         ArrivalCity,
+        Cost,
+        CAST(DepartureCity + ' - ' + ArrivalCity AS VARCHAR(4000)) AS RouteStr,
+        ArrivalCity AS CurrCity,
+        CAST(DepartureCity + '|' + ArrivalCity AS VARCHAR(4000)) AS Visited
+    FROM #Routes
+    WHERE DepartureCity = 'Tashkent'
+
+    UNION ALL
+
+    -- продолжаем путь, избегая циклов
+    SELECT
+        r.RouteID,
+        p.DepartureCity,
+        r.ArrivalCity,
+        p.Cost + r.Cost AS Cost,
+        CAST(p.RouteStr + ' - ' + r.ArrivalCity AS VARCHAR(4000)) AS RouteStr,
+        r.ArrivalCity AS CurrCity,
+        CAST(p.Visited + '|' + r.ArrivalCity AS VARCHAR(4000)) AS Visited
+    FROM Paths AS p
+    JOIN #Routes AS r
+      ON r.DepartureCity = p.CurrCity
+    WHERE p.Visited NOT LIKE '%' + r.ArrivalCity + '%'
+),
+Finished AS (
+    SELECT RouteStr AS Route, Cost
+    FROM Paths
+    WHERE CurrCity = 'Khorezm'
+)
+-- вывести мин/макс стоимостью
+SELECT TOP (1) Route, Cost
+FROM Finished
+ORDER BY Cost ASC;
+
+SELECT TOP (1) Route, Cost
+FROM Finished
+ORDER BY Cost DESC;
+GO
